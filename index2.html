@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GOGO！今野</title>
+    <style>
+        :root { --blue: #1e90ff; --gold: #ffd700; }
+        body { font-family: sans-serif; text-align: center; background: #f0f8ff; color: #333; margin: 0; padding: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; align-items: center; }
+        body.underground { background: #1a1a1a !important; color: #eee !important; }
+        .container { width: 95%; max-width: 380px; position: relative; z-index: 10; padding-top: 15px; }
+        .payout-table { font-size: 10px; background: rgba(0,0,0,0.8); color: #fff; padding: 6px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-around; }
+        .wallet { background: #fff; border: 3px solid var(--blue); border-radius: 12px; padding: 10px; font-size: 1.2em; margin-bottom: 6px; color: #000; transition: background 0.3s, color 0.3s; }
+        .wallet.gain { background: #e0ffe0; color: #006600; }
+        .wallet.loss { background: #ffe0e0; color: #cc0000; }
+        #stDisplay { color: #ff0055; font-weight: bold; height: 25px; font-size: 16px; text-shadow: 0 0 8px #fff; margin-bottom: 5px; }
+        .slot-machine { background: #111; padding: 12px; border-radius: 20px; box-shadow: 0 10px 0 #000; position: relative; border: 4px solid #444; }
+        .reels-wrapper { display: flex; justify-content: center; gap: 6px; margin-bottom: 12px; }
+        .reel-window { width: 90px; height: 100px; border: 2px solid #333; background: #fff; overflow: hidden; position: relative; border-radius: 5px; }
+        .reel-container { position: absolute; width: 100%; top: 0; left: 0; }
+        .symbol { height: 100px; line-height: 100px; font-size: 40px; font-weight: bold; color: #000; }
+        #konno-lamp { width: 100px; height: 40px; background: #050505; border-radius: 50% / 20%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-style: italic; font-weight: bold; color: #1a1a1a; font-size: 16px; border: 1px solid #222; }
+        #konno-lamp.peka { color: #ff00ff; text-shadow: 0 0 10px #fff, 0 0 20px #ff00ff; background: #200; box-shadow: 0 0 15px #ff00ff; border-color: #ff00ff; }
+        .stop-btn { width: 90px; height: 50px; background: linear-gradient(180deg, #ff6666, #cc0000); color: #fff; border: none; border-radius: 10px; font-weight: bold; box-shadow: 0 4px #800; cursor: pointer; }
+        .stop-btn:disabled { background: #555 !important; box-shadow: none !important; cursor: default; }
+        .spin-btn { width: 100%; height: 55px; background: linear-gradient(180deg, #4da6ff, #0066cc); color: #fff; border: 2px solid #fff; border-radius: 35px; font-size: 1.2em; font-weight: bold; margin-top: 15px; box-shadow: 0 5px #004488; cursor: pointer; }
+        #konno-cutin { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); width: 110%; height: 80px; background: linear-gradient(90deg, #8b008b, #ffd700, #8b008b); z-index: 2000; align-items: center; justify-content: center; border: 4px solid #fff; pointer-events: none; transition: transform 0.2s; }
+        #konno-cutin.active { display: flex; transform: translate(-50%, -50%) scale(1); }
+        #result-display { height: 40px; margin-top: 10px; font-weight: bold; font-size: 1.1em; color: #ff0055; }
+        #delta-display { height: 24px; margin-top: 2px; font-size: 1em; font-weight: bold; opacity: 0; transition: opacity 0.3s; }
+        #delta-display.show { opacity: 1; }
+        #delta-display.plus { color: #00aa00; }
+        #delta-display.minus { color: #cc0000; }
+        .overlay-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5000; padding: 20px; box-sizing: border-box; background: radial-gradient(circle, #fff 0%, #d0e8ff 100%); }
+        .choice-btn { width: 280px; height: 60px; margin: 10px; font-size: 1.2em; font-weight: bold; border-radius: 15px; color: #fff; border: none; cursor: pointer; }
+        #ippei-hack-btn { display: none; width: 100%; height: 50px; background: #b22222; color: #fff; border-radius: 15px; margin-top: 10px; border: 2px solid #fff; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="start-screen" class="overlay-screen">
+        <h1 style="color:var(--blue)">GOGO！今野<span style="opacity:0.1; font-size:12px; cursor:pointer" onclick="initGame(100, 'ippei')">⚾️</span></h1>
+        <button class="choice-btn" style="background:#1e90ff" onclick="initGame(100, 'normal')">通常モード</button>
+        <button class="choice-btn" style="background:#444" onclick="initGame(-300, 'unzaru')">運猿モード</button>
+        <button class="choice-btn" style="background:#ffcc00; color:#000" onclick="initGame(40, 'konno')">今野モード</button>
+    </div>
+    <div id="clear-screen" class="overlay-screen" style="display:none; background:#000; color:var(--gold);">
+        <p>2000万達成</p><h2 id="final-shogo" style="font-size:2.2em; text-shadow:0 0 10px var(--gold);">称号</h2>
+        <p id="final-message" style="font-weight:bold;"></p>
+        <button class="choice-btn" style="background:var(--gold); color:#000;" onclick="location.reload()">再挑戦</button>
+        <button class="choice-btn" style="background:#333;" onclick="goHome()">🏠 ホームに戻る</button>
+    </div>
+    <div id="arrest-screen" class="overlay-screen" style="display:none; background:#000; color:red;">
+        <h2>GAME OVER</h2><p>翔平「警察を呼んだよ」</p>
+        <button class="choice-btn" style="background:#333; border:1px solid red;" onclick="location.reload()">人生をやり直す</button>
+        <button class="choice-btn" style="background:#111; border:1px solid #666;" onclick="goHome()">🏠 ホームに戻る</button>
+    </div>
+    <div class="container">
+        <div class="payout-table"><span>７:250</span><span>🤡:100</span><span>🔔:50</span><span>🍇:15</span><span>🍒:10</span></div>
+        <div class="wallet">所持金: <span id="money">0</span> 万円</div>
+        <div id="delta-display"></div>
+        <div id="stDisplay"></div>
+        <div class="slot-machine">
+            <div id="konno-cutin"><div style="color:#fff; font-weight:bold; font-size: 18px;">勝ちは実力、負けは運！</div></div>
+            <div id="konno-lamp">KONNO!</div>
+            <div class="reels-wrapper">
+                <div class="reel-window"><div id="reel0" class="reel-container"></div></div>
+                <div class="reel-window"><div id="reel1" class="reel-container"></div></div>
+                <div class="reel-window"><div id="reel2" class="reel-container"></div></div>
+            </div>
+            <div style="display:flex; justify-content:center; gap: 10px;">
+                <button id="btn1" class="stop-btn" onclick="stopReel(0)" disabled>STOP</button>
+                <button id="btn2" class="stop-btn" onclick="stopReel(1)" disabled>STOP</button>
+                <button id="btn3" class="stop-btn" onclick="stopReel(2)" disabled>STOP</button>
+            </div>
+        </div>
+        <button id="mainSpinBtn" class="spin-btn" onclick="startAll()">レバーON！ (20万)</button>
+        <button id="ippei-hack-btn" onclick="ippeiHack()">翔平の口座にアクセス</button>
+        <div id="result-display"></div>
+    </div>
+    <script>
+        const symbols = ["７", "🤡", "🔔", "🍇", "🍒"];
+        const payouts = {"７": 250, "🤡": 100, "🔔": 50, "🍇": 15, "🍒": 10};
+        const SYM_COUNT = symbols.length;
+        let money = 0, stCount = 0, mode = 'normal';
+        let isSpinning = [false, false, false];
+        let resultIndices = [0, 0, 0];
+        let isWinningNext = false;
+        let activeBonus = null, bonusActive = false;
+        let deltaTimer = null;
+        let audioCtx = null;
+        function getAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+        function playTone(freq, type, duration, gainVal = 0.3, delay = 0) {
+            try {
+                const ctx = getAudio();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.connect(g); g.connect(ctx.destination);
+                o.type = type;
+                o.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+                g.gain.setValueAtTime(gainVal, ctx.currentTime + delay);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+                o.start(ctx.currentTime + delay);
+                o.stop(ctx.currentTime + delay + duration);
+            } catch(e) {}
+        }
+        function playNoise(duration, gainVal = 0.15, delay = 0) {
+            try {
+                const ctx = getAudio();
+                const bufSize = ctx.sampleRate * duration;
+                const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+                const src = ctx.createBufferSource();
+                src.buffer = buf;
+                const g = ctx.createGain();
+                src.connect(g); g.connect(ctx.destination);
+                g.gain.setValueAtTime(gainVal, ctx.currentTime + delay);
+                g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + duration);
+                src.start(ctx.currentTime + delay);
+                src.stop(ctx.currentTime + delay + duration);
+            } catch(e) {}
+        }
+        function soundLever() { playTone(180, 'sawtooth', 0.12, 0.25); playTone(120, 'sawtooth', 0.15, 0.2, 0.1); }
+        function soundStop() { playTone(440, 'square', 0.08, 0.2); playNoise(0.05, 0.1, 0.0); }
+        function soundLose() { playTone(300, 'sawtooth', 0.12, 0.2); playTone(220, 'sawtooth', 0.15, 0.2, 0.12); playTone(160, 'sawtooth', 0.18, 0.2, 0.26); }
+        function soundSmallWin() { playTone(523, 'sine', 0.12, 0.3); playTone(659, 'sine', 0.12, 0.3, 0.13); playTone(784, 'sine', 0.18, 0.3, 0.26); }
+        function soundBigWin() { [523,659,784,1047].forEach((f, i) => playTone(f, 'sine', 0.2, 0.4, i * 0.1)); }
+        function soundBonus() { const melody = [523,659,784,659,784,1047]; melody.forEach((f, i) => playTone(f, 'square', 0.18, 0.35, i * 0.12)); }
+        function soundKonno() { const m = [523,784,1047,784,1047,1319,1047,1319]; m.forEach((f, i) => { playTone(f, 'square', 0.15, 0.4, i * 0.1); playTone(f * 1.5, 'sine', 0.08, 0.2, i * 0.1); }); }
+        function soundBonusSpin() { playTone(660, 'sawtooth', 0.08, 0.15); }
+        function setupReels() {
+            for (let i = 0; i < 3; i++) {
+                const c = document.getElementById(`reel${i}`);
+                c.innerHTML = '';
+                for (let j = 0; j < 50; j++) {
+                    symbols.forEach((sym, si) => {
+                        const d = document.createElement('div');
+                        d.className = 'symbol';
+                        d.innerText = sym;
+                        c.appendChild(d);
+                    });
+                }
+            }
+        }
+        function initGame(m, md) {
+            money = m; mode = md;
+            document.getElementById('start-screen').style.display = 'none';
+            if (md === 'ippei') document.getElementById('ippei-hack-btn').style.display = 'block';
+            setupReels();
+            updateMoneyDisplay(0);
+        }
+        function startAll() {
+            if (isSpinning.includes(true)) return;
+            soundLever();
+            const cost = 20;
+            money -= cost;
+            showDelta(-cost);
+            document.getElementById("result-display").innerText = "";
+            document.getElementById("mainSpinBtn").disabled = true;
+            document.getElementById("konno-cutin").classList.remove('active');
+            if (stCount > 0) {
+                let bonusHitProb = (activeBonus === 'konno') ? 1.0 : (activeBonus === 'big') ? 0.7 : 0.034;
+                isWinningNext = Math.random() < bonusHitProb;
+                stCount--;
+                soundBonusSpin();
+            } else {
+                if (bonusActive) { bonusActive = false; activeBonus = null; document.getElementById("konno-lamp").classList.remove('peka'); }
+                let hitChance = (mode === 'unzaru') ? 0.10 : (mode === 'konno') ? 0.33 : (mode === 'ippei') ? 0.0001 : 0.017;
+                isWinningNext = Math.random() < hitChance;
+            }
+            document.getElementById("konno-lamp").classList.toggle('peka', isWinningNext);
+            resultIndices = [];
+            if (isWinningNext) {
+                const idx = Math.floor(Math.random() * SYM_COUNT);
+                resultIndices = [idx, idx, idx];
+            } else {
+                while (resultIndices.length < 3) {
+                    const idx = Math.floor(Math.random() * SYM_COUNT);
+                    resultIndices.push(idx);
+                    if (resultIndices.length === 3 && resultIndices[0] === resultIndices[1] && resultIndices[1] === resultIndices[2]) resultIndices.pop();
+                }
+            }
+            for (let i = 0; i < 3; i++) {
+                isSpinning[i] = true;
+                document.getElementById(`btn${i+1}`).disabled = false;
+                const r = document.getElementById(`reel${i}`);
+                r.style.transition = 'none';
+                r.style.top = '0px';
+                r.animate([{ top: '0px' }, { top: `-${SYM_COUNT * 100}px` }], { duration: 150, iterations: Infinity });
+            }
+            updateMoneyDisplay(0);
+            updateStDisplay();
+        }
+        function stopReel(i) {
+            if (!isSpinning[i]) return;
+            soundStop();
+            if (i === 2 && isWinningNext && !bonusActive) {
+                let r = Math.random();
+                if (mode === 'konno') {
+                    activeBonus = (r < 0.5) ? 'konno' : 'big';
+                } else {
+                    activeBonus = (r < 0.2) ? 'konno' : (r < 0.5) ? 'big' : 'reg';
+                }
+                stCount = 10;
+                bonusActive = true;
+                if (activeBonus === 'konno') {
+                    soundKonno();
+                    const cutin = document.getElementById("konno-cutin");
+                    cutin.classList.add('active');
+                    setTimeout(() => { cutin.classList.remove('active'); actuallyStopReel(i); }, 800);
+                    return;
+                } else {
+                    soundBonus();
+                }
+            }
+            actuallyStopReel(i);
+        }
+        function actuallyStopReel(i) {
+            isSpinning[i] = false;
+            document.getElementById(`btn${i+1}`).disabled = true;
+            const r = document.getElementById(`reel${i}`);
+            r.getAnimations().forEach(a => a.cancel());
+            r.style.transition = 'top 0.1s cubic-bezier(0.1, 0, 0.2, 1)';
+            const targetRow = 40 * SYM_COUNT + resultIndices[i];
+            r.style.top = `-${targetRow * 100}px`;
+            if (!isSpinning.includes(true)) setTimeout(checkResult, 200);
+        }
+        function checkResult() {
+            const res = document.getElementById("result-display");
+            const isWin = resultIndices[0] === resultIndices[1] && resultIndices[1] === resultIndices[2];
+            if (isWin) {
+                const sym = symbols[resultIndices[0]];
+                const gain = payouts[sym];
+                money += gain;
+                showDelta(+gain);
+                if (sym === "７" || sym === "🤡") soundBigWin();
+                else soundSmallWin();
+                if (stCount === 9) {
+                    const bonusName = (activeBonus === 'konno') ? "こんのボーナス！🎉" : (activeBonus === 'big') ? "BIGボーナス！💎" : "REGボーナス（確率2倍中）";
+                    res.innerText = `${bonusName}  ＋${gain}万円`;
+                } else {
+                    res.innerText = `当選！ ＋${gain}万円`;
+                }
+            } else {
+                soundLose();
+                res.innerText = (stCount === 0 && bonusActive) ? "ボーナス終了なのだ" : "ハズレなのだ…";
+            }
+            updateMoneyDisplay(0);
+            updateStDisplay();
+            document.getElementById("mainSpinBtn").disabled = false;
+        }
+        function ippeiHack() {
+            if (Math.random() < 0.3) {
+                document.getElementById("arrest-screen").style.display = "flex";
+            } else {
+                money += 200;
+                showDelta(200);
+                soundBigWin();
+                updateMoneyDisplay(0);
+            }
+        }
+        function showDelta(amount) {
+            const el = document.getElementById("delta-display");
+            if (deltaTimer) clearTimeout(deltaTimer);
+            el.className = 'show ' + (amount >= 0 ? 'plus' : 'minus');
+            el.innerText = (amount >= 0 ? '＋' : '') + amount + '万円';
+            deltaTimer = setTimeout(() => { el.className = ''; el.innerText = ''; }, 1800);
+        }
+        function updateMoneyDisplay(delta) {
+            const el = document.getElementById("money");
+            el.innerText = Math.floor(money);
+            const wallet = el.closest('.wallet');
+            if (delta > 0) { wallet.classList.add('gain'); wallet.classList.remove('loss'); }
+            else if (delta < 0) { wallet.classList.add('loss'); wallet.classList.remove('gain'); }
+            setTimeout(() => { wallet.classList.remove('gain', 'loss'); }, 600);
+            document.body.classList.toggle('underground', money < 0);
+            if (money >= 2000) {
+                const shogos = ["伝説のスロカス", "スカイビルの悪魔", "豊中のカイジ", "総文準優勝", "運だけの猿", "スロットチンパンジー", "下請法違反"];
+                const s = shogos[Math.floor(Math.random() * shogos.length)];
+                document.getElementById("final-shogo").innerText = s;
+                document.getElementById("final-message").innerText = (mode === 'ippei') ? "翔平「最高の通訳！」" : (s === "下請法違反") ? "反省しろ" : "あまりにも運だけの猿。動物園に帰ってください。";
+                document.getElementById("clear-screen").style.display = "flex";
+            }
+        }
+        function updateStDisplay() {
+            document.getElementById("stDisplay").innerText = stCount > 0 ? `💎 ボーナス残り ${stCount} 回 💎` : "";
+        }
+        function goHome() {
+            money = 0; stCount = 0; mode = 'normal';
+            isSpinning = [false, false, false];
+            resultIndices = [0, 0, 0];
+            isWinningNext = false;
+            activeBonus = null; bonusActive = false;
+            document.getElementById('clear-screen').style.display = 'none';
+            document.getElementById('arrest-screen').style.display = 'none';
+            document.getElementById('ippei-hack-btn').style.display = 'none';
+            document.getElementById('result-display').innerText = '';
+            document.getElementById('stDisplay').innerText = '';
+            document.getElementById('delta-display').className = '';
+            document.getElementById('delta-display').innerText = '';
+            document.getElementById('konno-lamp').classList.remove('peka');
+            document.getElementById('mainSpinBtn').disabled = false;
+            document.body.classList.remove('underground');
+            updateMoneyDisplay(0);
+            setupReels();
+            document.getElementById('start-screen').style.display = 'flex';
+        }
+        setupReels();
+    </script>
+</body>
+</html>
